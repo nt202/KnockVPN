@@ -2,6 +2,7 @@ package com.nt202.knockvpn;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
@@ -48,6 +49,12 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        if (true) {
+            Intent intent = new Intent(this, VpnActivity.class);
+            startActivity(intent);
+            return;
+        }
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         listView = (ListView) findViewById(R.id.listView);
