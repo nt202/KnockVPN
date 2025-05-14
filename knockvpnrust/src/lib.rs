@@ -1,17 +1,16 @@
-use jni::objects::{JClass, JString};
+use jni::objects::JClass;
 use jni::sys::jint;
 use jni::JNIEnv;
+use jni::sys::jstring;
 
-// // Function to return "Hello World"
-// #[no_mangle]
-// pub extern "system" fn Java_com_example_myapp_MainActivity_helloFromRust(
-//     env: JNIEnv,
-//     _: JClass,
-// ) -> JString {
-//     env.new_string("Hello from Rust!").unwrap()
-// }
+#[no_mangle]
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_helloFromRust(
+    env: JNIEnv,
+    _: JClass,
+) -> jstring {
+    env.new_string("Hello from Rust!").unwrap().into_raw()
+}
 
-// Function to sum two integers
 #[no_mangle]
 pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_sumFromRust(
     _: JNIEnv,
