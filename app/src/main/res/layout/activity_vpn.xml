@@ -9,7 +9,14 @@
 
     <TextView
         android:id="@+id/id_digit"
+        tools:text="2222"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/id_text"
+        tools:text="some text"
+        android:layout_below="@id/id_digit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
 </RelativeLayout>

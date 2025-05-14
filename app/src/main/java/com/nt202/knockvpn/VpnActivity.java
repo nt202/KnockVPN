@@ -21,9 +21,13 @@ public class VpnActivity extends AppCompatActivity {
         TextView digit = findViewById(R.id.id_digit);
         int d = sumFromRust(2, 5);
         digit.setText(String.valueOf(d));
+
+        TextView text = findViewById(R.id.id_text);
+        text.setText(helloFromRust());
     }
 
     public native int sumFromRust(int a, int b);
+    public native String helloFromRust();
 
     static {
         System.loadLibrary("knockvpnrust");
