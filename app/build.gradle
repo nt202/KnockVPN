@@ -3,6 +3,16 @@ plugins {
 }
 
 android {
+//    defaultConfig {
+//
+//    }
+//    sourceSets {
+//        main {
+//            // Tell Android Studio about our Rust library
+//            jniLibs.srcDirs = ['../rust/target/${ANDROID_ABI}/release']
+//        }
+//    }
+
     namespace 'com.nt202.knockvpn'
     compileSdk 34
 
@@ -13,7 +23,12 @@ android {
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                // Add Rust target platforms
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
     }
 
     buildTypes {

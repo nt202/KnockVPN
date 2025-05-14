@@ -1,6 +1,7 @@
 package com.nt202.knockvpn;
 
 import android.os.Bundle;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -17,5 +18,16 @@ public class VpnActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        TextView digit = findViewById(R.id.id_digit);
+        int d = sumFromJNI(2, 5);
+        digit.setText(String.valueOf(d));
     }
+
+//    public native String stringFromJNI();
+    public native int sumFromJNI(int a, int b);
+
+//    static {
+//        System.loadLibrary("nativelib");
+//        System.loadLibrary("knockvpnrust");
+//    }
 }
