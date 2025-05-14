@@ -19,15 +19,13 @@ public class VpnActivity extends AppCompatActivity {
             return insets;
         });
         TextView digit = findViewById(R.id.id_digit);
-        int d = sumFromJNI(2, 5);
+        int d = sumFromRust(2, 5);
         digit.setText(String.valueOf(d));
     }
 
-//    public native String stringFromJNI();
-    public native int sumFromJNI(int a, int b);
+    public native int sumFromRust(int a, int b);
 
-//    static {
-//        System.loadLibrary("nativelib");
-//        System.loadLibrary("knockvpnrust");
-//    }
+    static {
+        System.loadLibrary("knockvpnrust");
+    }
 }

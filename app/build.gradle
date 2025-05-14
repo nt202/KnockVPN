@@ -16,6 +16,8 @@ android {
     namespace 'com.nt202.knockvpn'
     compileSdk 34
 
+
+
     defaultConfig {
         applicationId "com.nt202.knockvpn"
         minSdk 16
@@ -23,11 +25,20 @@ android {
         versionCode 1
         versionName "1.0"
 
-        externalNativeBuild {
-            cmake {
-                // Add Rust target platforms
-                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
-            }
+        ndk {
+            abiFilters 'arm64-v8a' // or add other ABIs if needed
+        }
+//        externalNativeBuild {
+//            cmake {
+//                // Add Rust target platforms
+//                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+//            }
+//        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
 
