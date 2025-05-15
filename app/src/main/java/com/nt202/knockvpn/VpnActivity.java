@@ -24,10 +24,14 @@ public class VpnActivity extends AppCompatActivity {
 
         TextView text = findViewById(R.id.id_text);
         text.setText(helloFromRust());
+
+        TextView concatenatedText = findViewById(R.id.id_concatenated);
+        concatenatedText.setText(concatenateStrings("Mystring1", "Mystring2"));
     }
 
     public native int sumFromRust(int a, int b);
     public native String helloFromRust();
+    public native String concatenateStrings(String a, String b);
 
     static {
         System.loadLibrary("knockvpnrust");
