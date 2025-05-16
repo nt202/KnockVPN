@@ -3,6 +3,60 @@ use jni::sys::jint;
 use jni::JNIEnv;
 use jni::sys::jstring;
 
+
+
+
+use std::net::SocketAddr;
+use warp::Filter;
+use tokio::runtime::Runtime;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU16, Ordering};
+
+// Shared atomic port to track the server's bound port
+static PORT: AtomicU16 = AtomicU16::new(0);
+
+#[no_mangle]
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startHttpServer(
+    env: JNIEnv,
+    _: JClass,
+) -> jint {
+    // Create a Tokio runtime for async HTTP server
+    let rt = Runtime::new().unwrap();
+    
+    // Spawn the server in a new thread
+    std::thread::spawn(move || {
+        rt.block_on(async {
+            // Define a simple route
+            let hello = warp::path!("hello" / String)
+                .map(|name| format!("Hello, {} from Rust!", name));
+
+            // Bind to port 0 (OS picks a free port)
+            let addr = SocketAddr::from(([0, 0, 0, 0], 0));
+            let (addr, server) = warp::serve(hello).bind_ephemeral(addr);
+
+            // Store the assigned port
+            PORT.store(addr.port(), Ordering::SeqCst);
+
+            // Run the server forever
+            server.await;
+        });
+    });
+
+    // Return the port number to Java
+    PORT.load(Ordering::SeqCst) as jint
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getServerPort(
+    _env: JNIEnv,
+    _: JClass,
+) -> jint {
+    PORT.load(Ordering::SeqCst) as jint
+}
+
+
+
+
 #[no_mangle]
 pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_helloFromRust(
     env: JNIEnv,

@@ -9,3 +9,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 jni = { version = "0.21.1", default-features = false }
+tokio = { version = "1.0", features = ["full"] }
+warp = "0.3"  # Lightweight HTTP server
