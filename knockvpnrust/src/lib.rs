@@ -1,16 +1,13 @@
 use jni::objects::{JClass, JString};
 use jni::sys::jint;
-use jni::JNIEnv;
 use jni::sys::jstring;
-
-
-
+use jni::JNIEnv;
 
 use std::net::SocketAddr;
-use warp::Filter;
-use tokio::runtime::Runtime;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::Arc;
+use tokio::runtime::Runtime;
+use warp::Filter;
 
 // Shared atomic port to track the server's bound port
 static PORT: AtomicU16 = AtomicU16::new(0);
@@ -22,13 +19,13 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startHttpServer(
 ) -> jint {
     // Create a Tokio runtime for async HTTP server
     let rt = Runtime::new().unwrap();
-    
+
     // Spawn the server in a new thread
     std::thread::spawn(move || {
         rt.block_on(async {
             // Define a simple route
-            let hello = warp::path!("hello" / String)
-                .map(|name| format!("Hello, {} from Rust!", name));
+            let hello =
+                warp::path!("hello" / String).map(|name| format!("Hello, {} from Rust!", name));
 
             // Bind to port 0 (OS picks a free port)
             let addr = SocketAddr::from(([0, 0, 0, 0], 0));
@@ -54,9 +51,6 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getServerPort(
     PORT.load(Ordering::SeqCst) as jint
 }
 
-
-
-
 #[no_mangle]
 pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_helloFromRust(
     env: JNIEnv,
@@ -79,14 +73,16 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_sumFromRust(
 pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_concatenateStrings(
     mut env: JNIEnv,
     _: JClass,
-    str1: JString,  // First Java string
-    str2: JString,  // Second Java string
+    str1: JString, // First Java string
+    str2: JString, // Second Java string
 ) -> jstring {
     // Convert Java strings to Rust strings
-    let rust_str1: String = env.get_string(&str1)
+    let rust_str1: String = env
+        .get_string(&str1)
         .expect("Failed to get Rust string from Java")
         .into();
-    let rust_str2: String = env.get_string(&str2)
+    let rust_str2: String = env
+        .get_string(&str2)
         .expect("Failed to get Rust string from Java")
         .into();
 
