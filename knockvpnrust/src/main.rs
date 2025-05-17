@@ -67,7 +67,7 @@ impl Session {
         addrs: A,
     ) -> Result<Self> {
         let config = client::Config {
-            inactivity_timeout: Some(Duration::from_secs(5)),
+            inactivity_timeout: Some(Duration::from_secs(1000000)),
             preferred: Preferred {
                 kex: Cow::Borrowed(&[
                     russh::kex::CURVE25519_PRE_RFC_8731,
