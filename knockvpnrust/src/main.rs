@@ -1,10 +1,8 @@
 use std::borrow::Cow;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use clap::Parser;
 use log::info;
 use russh::keys::PublicKey;
 use russh::*;
@@ -16,14 +14,6 @@ async fn main() -> Result<()> {
     env_logger::builder()
         .filter_level(log::LevelFilter::Debug)
         .init();
-
-    // CLI options are defined later in this file
-    // let cli = Cli::parse();
-
-    // info!("Connecting to {}:{}", cli.host, cli.port);
-    // info!("Using username: {}", cli.username);
-
-    // Session is a wrapper around a russh client, defined down below
     let mut ssh = Session::connect_password(
         "qwerty".to_string(),
         "testuser".to_string(),
@@ -31,17 +21,9 @@ async fn main() -> Result<()> {
     )
     .await?;
     info!("Connected");
-
     let code = ssh
-        .call( "ls"
-            // &cli.command
-            //     .into_iter()
-            //     .map(|x| shell_escape::escape(x.into())) // arguments are escaped manually since the SSH protocol doesn't support quoting
-            //     .collect::<Vec<_>>()
-            //     .join(" "),
-        )
+        .call("ls")
         .await?;
-
     println!("Exitcode: {:?}", code);
     ssh.close().await?;
     Ok(())
@@ -60,8 +42,6 @@ impl client::Handler for Client {
     }
 }
 
-/// This struct is a convenience wrapper
-/// around a russh client
 pub struct Session {
     session: client::Handle<Client>,
 }
@@ -83,44 +63,32 @@ impl Session {
             },
             ..<_>::default()
         };
-
         let config = Arc::new(config);
         let sh = Client {};
-
         let mut session = client::connect(config, addrs, sh).await?;
-        
-        // Use password authentication
         let auth_res = session.authenticate_password(user, password).await?;
-
         if !auth_res.success() {
             anyhow::bail!("Authentication with password failed");
         }
-
         Ok(Self { session })
     }
 
     async fn call(&mut self, command: &str) -> Result<u32> {
         let mut channel = self.session.channel_open_session().await?;
         channel.exec(true, command).await?;
-
         let mut code = None;
         let mut stdout = tokio::io::stdout();
-
         loop {
-            // There's an event available on the session channel
             let Some(msg) = channel.wait().await else {
                 break;
             };
             match msg {
-                // Write data to the terminal
                 ChannelMsg::Data { ref data } => {
                     stdout.write_all(data).await?;
                     stdout.flush().await?;
                 }
-                // The command has returned an exit code
                 ChannelMsg::ExitStatus { exit_status } => {
                     code = Some(exit_status);
-                    // cannot leave the loop immediately, there might still be more data to receive
                 }
                 _ => {}
             }
@@ -134,23 +102,4 @@ impl Session {
             .await?;
         Ok(())
     }
-}
-
-#[derive(clap::Parser)]
-#[clap(trailing_var_arg = true)]
-pub struct Cli {
-    #[clap(index = 1)]
-    host: String,
-
-    #[clap(long, short, default_value_t = 22)]
-    port: u16,
-
-    #[clap(long, short)]
-    username: Option<String>,
-
-    #[clap(long, short)]
-    password: String,
-
-    #[clap(multiple = true, index = 2, required = true)]
-    command: Vec<String>,
 }

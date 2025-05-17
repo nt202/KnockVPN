@@ -10,7 +10,7 @@ cargo build --target x86_64-linux-android --release
 ```
 
 ```
-ssh -D 1080 -C -N -p 22 username@100.100.100.100
+ssh -D 1080 -C -N -p 2222 testuser@127.0.0.1
 ```
 
 ```
