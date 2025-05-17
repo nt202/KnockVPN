@@ -7,7 +7,6 @@ use anyhow::Result;
 use log::info;
 use russh::client::Handler;
 use russh::keys::PublicKey;
-use russh::ChannelMsg;
 use russh::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::ToSocketAddrs;
@@ -25,12 +24,12 @@ async fn main() -> Result<()> {
         ("127.0.0.1", 2222),
     )
     .await?;
-    info!("Connected");
+    info!("kvuor2: Connected");
 
     let ssh_clone = ssh.clone();
     let socks_task = tokio::spawn(async move {
         if let Err(e) = ssh_clone.start_socks_proxy("127.0.0.1:1080").await {
-            eprintln!("SOCKS proxy error: {:?}", e);
+            eprintln!("XBg4kq: SOCKS proxy error: {:?}", e);
         }
     });
 
@@ -94,7 +93,7 @@ impl Session {
     }
 
     async fn close(&self) -> Result<()> {
-        let mut handle = self.handle.lock().await;
+        let handle = self.handle.lock().await;
         handle
             .disconnect(Disconnect::ByApplication, "", "English")
             .await?;
@@ -103,16 +102,16 @@ impl Session {
 
     async fn start_socks_proxy(&self, local_addr: &str) -> Result<()> {
         let listener = tokio::net::TcpListener::bind(local_addr).await?;
-        info!("SOCKS proxy listening on {}", local_addr);
+        info!("EoYf7Y: SOCKS proxy listening on {}", local_addr);
 
         loop {
             let (stream, addr) = listener.accept().await?;
-            info!("Accepted connection from {}", addr);
+            info!("8x49Qj: Accepted connection from {}", addr);
 
             let session = self.clone();
             tokio::spawn(async move {
                 if let Err(e) = session.handle_socks_client(stream).await {
-                    eprintln!("Error handling client: {:?}", e);
+                    eprintln!("xu8GWI: Error handling client: {:?}", e);
                 }
             });
         }
@@ -124,7 +123,9 @@ impl Session {
         stream.read_exact(&mut handshake).await?;
 
         if handshake[0] != 0x05 {
-            anyhow::bail!("Unsupported SOCKS version: {}", handshake[0]);
+            anyhow::bail!("L8PRRA: Unsupported SOCKS version: {}", handshake[0]);
+        } else {
+            info!("fJzYmx: Supported version: {}", handshake[0]);
         }
 
         // Read methods
@@ -170,13 +171,13 @@ impl Session {
         };
 
         // Open SSH channel
-        let mut handle = self.handle.lock().await;
+        let handle = self.handle.lock().await;
         let channel = handle
             .channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0)
             .await?;
 
         // Split channel into read/write halves
-        let (mut channel_read, mut channel_write) = channel.split();
+        let (mut channel_read, channel_write) = channel.split();
 
         // Send success response
         stream
