@@ -2,10 +2,10 @@ use jni::objects::{JClass, JString};
 use jni::sys::jint;
 use jni::sys::jstring;
 use jni::JNIEnv;
+// use tun2socks::{main_from_str, quit};
 
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU16, Ordering};
-use std::sync::Arc;
 use tokio::runtime::Runtime;
 use warp::Filter;
 
@@ -94,3 +94,32 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_concatenateStrings(
         .expect("Couldn't create Java string!")
         .into_raw()
 }
+
+
+// #[no_mangle]
+// pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startTun2Socks(
+//     mut env: JNIEnv,
+//     _: JClass,
+//     config_yaml: JString,
+//     fd: jint,
+// ) -> jstring {
+//     let config: String = env
+//         .get_string(&config_yaml)
+//         .expect("dIoxi2")
+//         .into();
+//     let result = main_from_str(&config, fd);
+//     if result.is_ok() {
+//         return env.new_string("q1sN4q: Ok").unwrap().into_raw();
+//     } else {
+//         return env.new_string("k5GeLo: Err").unwrap().into_raw()
+//     }
+// }
+
+// #[no_mangle]
+// pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_stopTun2Socks(
+//     env: JNIEnv,
+//     _: JClass,
+// ) -> jstring {
+//     quit();
+//     return env.new_string("buep6Y: Ok").unwrap().into_raw();
+// }
