@@ -293,19 +293,27 @@ impl Session {
 
         // Open SSH channel
         info!("Before locking in handling client");
-        let handle = self.handle.lock().await;
-        info!("After locking in handling client");
-        info!("Opening SSH channel to {}:{}", host, port);
-        // let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
-        let channel = timeout(Duration::from_secs(10), handle
-            .channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0))
-            .await
-            .map_err(|_| {
-                // Send SOCKS5 error response (general failure)
-                let _ = stream
-                    .write_all(&[0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-                anyhow::anyhow!("Timeout opening SSH channel")
-            })??;
+        let channel = {
+            let handle = self.handle.lock().await;
+            info!("After locking in handling client");
+            info!("Opening SSH channel to {}:{}", host, port);
+            handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?
+        };
+
+
+        // let handle = self.handle.lock().await;
+        // info!("After locking in handling client");
+        // info!("Opening SSH channel to {}:{}", host, port);
+        // // let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
+        // let channel = timeout(Duration::from_secs(10), handle
+        //     .channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0))
+        //     .await
+        //     .map_err(|_| {
+        //         // Send SOCKS5 error response (general failure)
+        //         let _ = stream
+        //             .write_all(&[0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        //         anyhow::anyhow!("Timeout opening SSH channel")
+        //     })??;
         info!("SSH channel opened successfully to {}:{}", host, port);
 
         // Split channel into read/write halves
