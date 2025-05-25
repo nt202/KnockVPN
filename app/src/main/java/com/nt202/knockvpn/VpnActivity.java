@@ -2,6 +2,7 @@ package com.nt202.knockvpn;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -11,6 +12,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class VpnActivity extends AppCompatActivity {
+    private static final  String TAG = VpnActivity.class.getSimpleName();
 //    @Override
 //    protected void onCreate(Bundle savedInstanceState) {
 //        super.onCreate(savedInstanceState);
@@ -24,21 +26,21 @@ public class VpnActivity extends AppCompatActivity {
 //        int d = sumFromRust(2, 5);
 //        digit.setText(String.valueOf(d));
 //
-//        TextView text = findViewById(R.id.id_text);
-//        text.setText(helloFromRust());
+
 //
 //        TextView concatenatedText = findViewById(R.id.id_concatenated);
 //        concatenatedText.setText(concatenateStrings("Mystring1", "Mystring2"));
 //    }
 
-    public native int sumFromRust(int a, int b);
+//    public native int sumFromRust(int a, int b);
     public native String helloFromRust();
-    public native String concatenateStrings(String a, String b);
+    public native int getServerPort();
+//    public native String concatenateStrings(String a, String b);
+    public native String startSocksServer(String username, String address, int port, String password, String key);
 
     static {
         System.loadLibrary("knockvpnrust");
     }
-
 
     private static final int VPN_REQUEST_CODE = 0x01;
 
@@ -47,7 +49,36 @@ public class VpnActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vpn);
 
-//        copyTun2SocksBinary(); // Call the helper method above
+        TextView text = findViewById(R.id.id_text);
+        text.setText(helloFromRust());
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String errorJson = startSocksServer("testuser", "192.168.0.103", 2222, "qwerty", "");
+
+                Log.i(TAG, "errorJson: " + errorJson);
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10_000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                int port = getServerPort();
+                TextView digit = findViewById(R.id.id_digit);
+                digit.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        digit.setText(port + "");
+                    }
+                });
+            }
+        }).start();
 
         Button startButton = findViewById(R.id.start_button);
         startButton.setOnClickListener(v -> startVpn());
