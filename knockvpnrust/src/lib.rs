@@ -139,6 +139,10 @@ pub async fn start_with_password(username: String, address: String, port: u16, p
     Ok(())
 }
 
+// lazy_static! {
+//     static ref CONN_LIMIT: Semaphore = Semaphore::new(50); // Max 50 concurrent connections
+// }
+
 #[derive(Clone)]
 struct Client;
 
@@ -252,6 +256,7 @@ impl Session {
             stream
                 .write_all(&[0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
                 .await?;
+            stream.flush().await?;
             anyhow::bail!("Unsupported command: {:?}", request);
         }
 
@@ -279,7 +284,13 @@ impl Session {
                 let port = stream.read_u16().await?;
                 (Ipv6Addr::from(ip).to_string(), port)
             }
-            _ => anyhow::bail!("Invalid address type"),
+            _ => {
+                stream
+                    .write_all(&[0x05, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+                    .await?;
+                stream.flush().await?;
+                anyhow::bail!("Invalid address type");
+            }
         };
         info!("Destination: {}:{}", host, port);
 
