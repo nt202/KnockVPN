@@ -13,16 +13,30 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use log::info;
 use russh::client::Handler;
 use russh::keys::PublicKey;
 use russh::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::Mutex;
+use log::{error, info, LevelFilter};
+use android_logger::{Config, FilterBuilder};
+
 
 // Shared atomic port to track the server's bound port
 pub static PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
+
+
+
+#[no_mangle]
+pub extern "C" fn Java_com_nt202_knockvpn_VpnActivity_initLogging(env: JNIEnv, _: JClass) {
+    android_logger::init_once(
+        Config::default()
+            .with_tag("KnockVpnRust")
+            .with_max_level(LevelFilter::Trace)
+    );
+    info!("Rust logging initialized!");
+}
 
 #[no_mangle]
 pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startSocksServer(
@@ -143,9 +157,9 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_concatenateStrings(
 
 
 pub async fn start_with_password(username: String, address: String, port: u16, password: String) -> Result<()> {
-    env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
-        .init();
+    // env_logger::builder()
+    //     .filter_level(log::LevelFilter::Debug)
+    //     .init();
 
     let ssh = Session::connect_password(
         password,

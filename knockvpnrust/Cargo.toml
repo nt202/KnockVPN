@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 jni = { version = "0.21.1", default-features = false }
+android_logger = "0.15.0"
 tokio = { version = "1.0", features = ["full"] }
 russh = "0.52.1"
 anyhow = "1.0.98"
