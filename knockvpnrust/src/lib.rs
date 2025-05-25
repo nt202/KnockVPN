@@ -2,11 +2,9 @@ use jni::objects::{JClass, JString};
 use jni::sys::jint;
 use jni::sys::jstring;
 use jni::JNIEnv;
-// use tun2socks::{main_from_str, quit};
-
-use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU16, Ordering};
 use tokio::runtime::Runtime;
-
+use std::os::fd::AsRawFd;
 use std::borrow::Cow;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
@@ -17,14 +15,15 @@ use russh::client::Handler;
 use russh::keys::PublicKey;
 use russh::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, ToSocketAddrs};
+use tokio::net::ToSocketAddrs;
 use tokio::sync::Mutex;
-use log::{error, info, LevelFilter};
-use android_logger::{Config, FilterBuilder};
+use log::{info, LevelFilter};
+use android_logger::Config;
 
 
 // Shared atomic port to track the server's bound port
-pub static PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
+static SOCKS_SERVER_PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
+static SOCKS_SERVER_FD: AtomicI32 = AtomicI32::new(-1);
 
 
 
@@ -48,7 +47,7 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startSocksServer(
     password: JString, // Might be empty
     key: JString, // private key. Might be empty
 ) -> jstring {
-    PORT.store(0, Ordering::SeqCst);
+    SOCKS_SERVER_PORT.store(0, Ordering::SeqCst);
 
     let rust_password: String = env
         .get_string(&password)
@@ -103,11 +102,19 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startSocksServer(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getServerPort(
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getSocksPort(
     _env: JNIEnv,
     _: JClass,
 ) -> jint {
-    PORT.load(Ordering::SeqCst) as jint
+    SOCKS_SERVER_PORT.load(Ordering::SeqCst) as jint
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getSocksFd(
+    _env: JNIEnv,
+    _: JClass,
+) -> jint {
+    SOCKS_SERVER_FD.load(Ordering::SeqCst) as jint
 }
 
 #[no_mangle]
@@ -172,7 +179,7 @@ pub async fn start_with_password(username: String, address: String, port: u16, p
     let ssh_clone = ssh.clone();
 
     let socks_task = tokio::spawn(async move {
-        if let Err(e) = ssh_clone.start_socks_proxy().await {
+        if let Err(e) = ssh_clone.start_socks_proxy2().await {
             eprintln!("XBg4kq: SOCKS proxy error: {:?}", e);
         }
     });
@@ -247,12 +254,63 @@ impl Session {
         Ok(())
     }
 
-    async fn start_socks_proxy(&self) -> Result<String> {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let bound_address = listener.local_addr().expect("EVN7Nq");
+    // async fn start_socks_proxy(&self) -> Result<String> {
+    //     let listener = TcpListener::bind("127.0.0.1:0").await?;
+    //     let bound_port = listener.local_addr()?.port();
+    //     PORT.store(bound_port, Ordering::SeqCst);
 
+    //     // Create a single SSH channel upfront
+    //     let (mut channel_read, channel_write) = {
+    //         let handle = self.handle.lock().await;
+    //         let channel = handle.channel_open_session().await?;
+    //         channel.split()
+    //     };
+
+    //     loop {
+    //         let (stream, addr) = listener.accept().await?;
+    //         info!("Accepted connection from {}", addr);
+
+    //         // Clone the existing channel halves for each new connection
+    //         let (mut client_read, mut client_write) = stream.split();
+    //         let mut channel_read = channel_read.clone();
+    //         let channel_write = channel_write.clone();
+
+    //         tokio::spawn(async move {
+    //             // Bidirectional copy between client and the single SSH channel
+    //             let client_to_channel = async {
+    //                 let mut buf = [0u8; 4096];
+    //                 loop {
+    //                     let n = client_read.read(&mut buf).await?;
+    //                     if n == 0 { break; }
+    //                     channel_write.data(&buf[..n]).await?;
+    //                 }
+    //                 Ok::<_, anyhow::Error>(())
+    //             };
+
+    //             let channel_to_client = async {
+    //                 let mut buf = [0u8; 4096];
+    //                 loop {
+    //                     let n = channel_read.read(&mut buf).await?;
+    //                     if n == 0 { break; }
+    //                     client_write.write_all(&buf[..n]).await?;
+    //                 }
+    //                 Ok::<_, anyhow::Error>(())
+    //             };
+
+    //             tokio::try_join!(client_to_channel, channel_to_client).map(|_| ())
+    //         });
+    //     }
+    // }
+
+    async fn start_socks_proxy2(&self) -> Result<String> {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+
+        let bound_address = listener.local_addr().expect("EVN7Nq");
         let bound_port = bound_address.port();
-        PORT.store(bound_port, Ordering::SeqCst);
+        SOCKS_SERVER_PORT.store(bound_port, Ordering::SeqCst);
+
+        let raw_fd = listener.as_raw_fd(); // Get the raw file descriptor
+        SOCKS_SERVER_FD.store(raw_fd, Ordering::SeqCst);
 
         loop {
             let (stream, addr) = listener.accept().await?;
