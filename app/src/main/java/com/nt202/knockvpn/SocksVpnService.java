@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.system.OsConstants;
 import android.util.Log;
 
 import java.io.File;
@@ -25,10 +26,11 @@ public class SocksVpnService extends VpnService {
             proxyService = new TProxyService();
         }
         final int socksPort = intent.getIntExtra("socksPort", 0);
+        final int socksFd = intent.getIntExtra("socksFd", 0);
         // Start VPN in a new thread to avoid blocking the UI
         new Thread(() -> {
             try {
-                runVpn(socksPort);
+                runVpn(socksPort, socksFd);
             } catch (Exception e) {
                 Log.e(TAG, "VPN error", e);
                 stopSelf();
@@ -37,19 +39,26 @@ public class SocksVpnService extends VpnService {
         return START_STICKY;
     }
 
-    private void runVpn(int socksPort) {
+    private void runVpn(int socksPort, int socksFd) {
+        final boolean isProtected = protect(socksFd);
+        if (!isProtected) {
+            throw new IllegalStateException("SOCKS socket protection failed");
+        }
+
         try {
             // Configure the TUN interface
             Builder builder = new Builder();
             builder.setSession("KnockVPN");
             builder.addAddress("10.0.0.2", 24); // Virtual IP for the device
             builder.addRoute("0.0.0.0", 0); // Route all traffic through the VPN
-//            builder.addDnsServer("8.8.8.8"); // Prevent DNS leaks
-//            builder.addDnsServer("1.1.1.1"); // Prevent DNS leaks
+            builder.addDnsServer("8.8.8.8"); // Prevent DNS leaks
+            builder.addDnsServer("1.1.1.1"); // Prevent DNS leaks
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    builder.addDisallowedApplication("com.nt202.knockvpn");
-                    builder.addDisallowedApplication("com.termux");
+                    builder.allowFamily(OsConstants.AF_INET);
+                    builder.addDisallowedApplication(getPackageName()); // Self
+//                    builder.addDisallowedApplication("com.nt202.knockvpn");
+//                    builder.addDisallowedApplication("com.termux");
                 }
             } catch (PackageManager.NameNotFoundException e) {
                 Log.e("VPN", "App not found: " + e.getMessage());
