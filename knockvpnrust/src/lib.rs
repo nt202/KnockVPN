@@ -2,45 +2,88 @@ use jni::objects::{JClass, JString};
 use jni::sys::jint;
 use jni::sys::jstring;
 use jni::JNIEnv;
+use ssh_socks::start_with_password;
 // use tun2socks::{main_from_str, quit};
 
-use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU16, Ordering};
 use tokio::runtime::Runtime;
-use warp::Filter;
+
+mod ssh_socks;
+
 
 // Shared atomic port to track the server's bound port
-static PORT: AtomicU16 = AtomicU16::new(0);
+static PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
 
 #[no_mangle]
-pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startHttpServer(
-    env: JNIEnv,
+pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startSocksServer(
+    mut env: JNIEnv,
     _: JClass,
-) -> jint {
-    // Create a Tokio runtime for async HTTP server
-    let rt = Runtime::new().unwrap();
+    username: JString,
+    address: JString,
+    port: jint,
+    password: JString, // Might be empty
+    key: JString, // private key. Might be empty
+) -> jstring {
+    PORT.store(0, Ordering::SeqCst);
 
-    // Spawn the server in a new thread
-    std::thread::spawn(move || {
-        rt.block_on(async {
-            // Define a simple route
-            let hello =
-                warp::path!("hello" / String).map(|name| format!("Hello, {} from Rust!", name));
+    let rust_password: String = env
+        .get_string(&password)
+        .expect("lHcSzg")
+        .into();
 
-            // Bind to port 0 (OS picks a free port)
-            let addr = SocketAddr::from(([0, 0, 0, 0], 0));
-            let (addr, server) = warp::serve(hello).bind_ephemeral(addr);
+    let rust_key: String = env
+        .get_string(&key)
+        .expect("odnq8P")
+        .into();
 
-            // Store the assigned port
-            PORT.store(addr.port(), Ordering::SeqCst);
+    if rust_password.is_empty() && rust_key.is_empty() {
+        return env.new_string(format!(r#"{{"error": "{}"}}"#, "xLLsAw")).unwrap().into_raw();
+    }
 
-            // Run the server forever
-            server.await;
+    if !rust_password.is_empty() && !rust_key.is_empty() {
+        return env.new_string(format!(r#"{{"error": "{}"}}"#, "bxr4mD")).unwrap().into_raw();
+    }
+
+    let rust_username: String = env
+        .get_string(&username)
+        .expect("YcLJMc")
+        .into();
+
+    let rust_address: String = env
+        .get_string(&address)
+        .expect("GATFFD")
+        .into();
+
+    let rust_port = port as u16;
+
+    if !rust_password.is_empty() {
+
+        // Create a Tokio runtime for async HTTP server
+        let rt = Runtime::new().unwrap();
+
+        // Spawn the server in a new thread
+        std::thread::spawn(move || {
+            rt.block_on(async {
+                let result = start_with_password(rust_username, rust_address, rust_port, rust_password).await;
+                match result {
+                    Ok(bound_port) => {
+                        PORT.store(bound_port, Ordering::SeqCst);
+                    }
+                    Err(e) => {
+                        PORT.store(0, Ordering::SeqCst);
+                    }
+                }
+            });
         });
-    });
 
-    // Return the port number to Java
-    PORT.load(Ordering::SeqCst) as jint
+        
+
+    } else {
+        return env.new_string(format!(r#"{{"error": "{}"}}"#, "0OyuTy")).unwrap().into_raw();
+    }
+
+
+    return env.new_string(format!(r#"{{"error": "{}"}}"#, "")).unwrap().into_raw();
 }
 
 #[no_mangle]
@@ -94,32 +137,3 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_concatenateStrings(
         .expect("Couldn't create Java string!")
         .into_raw()
 }
-
-
-// #[no_mangle]
-// pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startTun2Socks(
-//     mut env: JNIEnv,
-//     _: JClass,
-//     config_yaml: JString,
-//     fd: jint,
-// ) -> jstring {
-//     let config: String = env
-//         .get_string(&config_yaml)
-//         .expect("dIoxi2")
-//         .into();
-//     let result = main_from_str(&config, fd);
-//     if result.is_ok() {
-//         return env.new_string("q1sN4q: Ok").unwrap().into_raw();
-//     } else {
-//         return env.new_string("k5GeLo: Err").unwrap().into_raw()
-//     }
-// }
-
-// #[no_mangle]
-// pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_stopTun2Socks(
-//     env: JNIEnv,
-//     _: JClass,
-// ) -> jstring {
-//     quit();
-//     return env.new_string("buep6Y: Ok").unwrap().into_raw();
-// }

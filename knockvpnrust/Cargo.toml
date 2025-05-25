@@ -10,13 +10,9 @@ crate-type = ["cdylib"]
 [dependencies]
 jni = { version = "0.21.1", default-features = false }
 tokio = { version = "1.0", features = ["full"] }
-warp = "0.3"  # Lightweight HTTP server
 russh = "0.52.1"
 anyhow = "1.0.98"
 async-trait = "0.1.88"
-clap = { version = "3.2.3", features = ["derive"] }
 log = "0.4.27"
 env_logger = "0.11.8"
-shell-escape = "0.1.5"
 futures = "0.3.31"
-# tun2socks = "0.1.8"

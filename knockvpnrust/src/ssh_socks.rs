@@ -9,36 +9,81 @@ use russh::client::Handler;
 use russh::keys::PublicKey;
 use russh::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::ToSocketAddrs;
+use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::Mutex;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+// #[tokio::main]
+// async fn main() -> Result<()> {
+//     env_logger::builder()
+//         .filter_level(log::LevelFilter::Debug)
+//         .init();
+
+//     let ssh = Session::connect_password(
+//         "qwerty".to_string(),
+//         "testuser".to_string(),
+//         ("127.0.0.1", 2222),
+//     )
+//     .await?;
+//     info!("kvuor2: Connected");
+
+//     let ssh_clone = ssh.clone();
+
+//     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+//     info!("EoYf7Y: SOCKS proxy listening on {}", listener.local_addr().unwrap());
+
+//     let socks_task = tokio::spawn(async move {
+//         if let Err(e) = ssh_clone.start_socks_proxy(listener).await {
+//             eprintln!("XBg4kq: SOCKS proxy error: {:?}", e);
+//         }
+//     });
+
+//     info!("{}: {}", "NXeyfq", "Started");
+
+//     tokio::signal::ctrl_c().await.ok();
+//     info!("Shutting down...");
+
+//     socks_task.await.ok();
+//     ssh.close().await?;
+//     Ok(())
+// }
+
+pub async fn start_with_password(username: String, address: String, port: u16, password: String) -> Result<u16> {
     env_logger::builder()
         .filter_level(log::LevelFilter::Debug)
         .init();
 
     let ssh = Session::connect_password(
-        "qwerty".to_string(),
-        "testuser".to_string(),
-        ("127.0.0.1", 2222),
+        password,
+        username,
+        (address, port),
     )
     .await?;
     info!("kvuor2: Connected");
 
     let ssh_clone = ssh.clone();
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let bound_address = listener.local_addr().expect("EVN7Nq");
+
+    info!("EoYf7Y: SOCKS proxy listening on {}", bound_address);
+
     let socks_task = tokio::spawn(async move {
-        if let Err(e) = ssh_clone.start_socks_proxy("127.0.0.1:1080").await {
+        if let Err(e) = ssh_clone.start_socks_proxy(listener).await {
             eprintln!("XBg4kq: SOCKS proxy error: {:?}", e);
         }
     });
+
+    info!("{}: {}", "NXeyfq", "Started");
 
     tokio::signal::ctrl_c().await.ok();
     info!("Shutting down...");
 
     socks_task.await.ok();
     ssh.close().await?;
-    Ok(())
+
+    let bound_port = bound_address.port();
+    
+    Ok(bound_port)
 }
 
 #[derive(Clone)]
@@ -100,10 +145,7 @@ impl Session {
         Ok(())
     }
 
-    async fn start_socks_proxy(&self, local_addr: &str) -> Result<()> {
-        let listener = tokio::net::TcpListener::bind(local_addr).await?;
-        info!("EoYf7Y: SOCKS proxy listening on {}", local_addr);
-
+    async fn start_socks_proxy(&self, listener: TcpListener) -> Result<String> {
         loop {
             let (stream, addr) = listener.accept().await?;
             info!("8x49Qj: Accepted connection from {}", addr);
