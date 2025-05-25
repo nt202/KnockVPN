@@ -24,10 +24,11 @@ public class SocksVpnService extends VpnService {
         if (proxyService == null) {
             proxyService = new TProxyService();
         }
+        final int socksPort = intent.getIntExtra("socksPort", 0);
         // Start VPN in a new thread to avoid blocking the UI
         new Thread(() -> {
             try {
-                runVpn();
+                runVpn(socksPort);
             } catch (Exception e) {
                 Log.e(TAG, "VPN error", e);
                 stopSelf();
@@ -36,16 +37,18 @@ public class SocksVpnService extends VpnService {
         return START_STICKY;
     }
 
-    private void runVpn() {
+    private void runVpn(int socksPort) {
         try {
             // Configure the TUN interface
             Builder builder = new Builder();
             builder.setSession("KnockVPN");
             builder.addAddress("10.0.0.2", 24); // Virtual IP for the device
             builder.addRoute("0.0.0.0", 0); // Route all traffic through the VPN
-            builder.addDnsServer("8.8.8.8"); // Prevent DNS leaks
+//            builder.addDnsServer("8.8.8.8"); // Prevent DNS leaks
+//            builder.addDnsServer("1.1.1.1"); // Prevent DNS leaks
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    builder.addDisallowedApplication("com.nt202.knockvpn");
                     builder.addDisallowedApplication("com.termux");
                 }
             } catch (PackageManager.NameNotFoundException e) {
@@ -58,25 +61,26 @@ public class SocksVpnService extends VpnService {
             int tunFd = tunInterface.getFd();
 
             // Start tun2socks binary (see step 3 for setup)
-            startTun2Socks(tunFd);
+            startTun2Socks(socksPort, tunFd);
         } catch (Exception e) {
             Log.e(TAG, "VPN setup failed", e);
         }
     }
 
-    private void startTun2Socks(int tunFd) throws IOException {
+    private void startTun2Socks(int socksPort, int tunFd) throws IOException {
 
         Log.i(TAG, "startTun2Socks: " + tunFd);
 
-        final String content;
+        final String contentTemplate;
         try {
-            content = RawFileReader.getRawFileAsString(this, R.raw.config);
+            contentTemplate = RawFileReader.getRawFileAsString(this, R.raw.config);
             // Use the content string
         } catch (IOException e) {
             e.printStackTrace();
             return;
             // Handle the exception
         }
+        final String content = contentTemplate.replace("socksPort", socksPort + "");
 
         /* TProxy */
         File configFile = new File(getCacheDir(), "config.yaml");

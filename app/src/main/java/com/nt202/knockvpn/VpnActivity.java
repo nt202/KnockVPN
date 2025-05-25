@@ -11,7 +11,10 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class VpnActivity extends AppCompatActivity {
+    private int PORT = 0;
     private static final  String TAG = VpnActivity.class.getSimpleName();
 //    @Override
 //    protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +73,7 @@ public class VpnActivity extends AppCompatActivity {
                     throw new RuntimeException(e);
                 }
                 int port = getServerPort();
+                PORT = port;
                 TextView digit = findViewById(R.id.id_digit);
                 digit.post(new Runnable() {
                     @Override
@@ -86,12 +90,23 @@ public class VpnActivity extends AppCompatActivity {
 
     private void startVpn() {
         Intent intent = SocksVpnService.prepare(this);
+        try {
+            intent.putExtra("socksPort", PORT);
+        } catch (Exception e) {
+            Log.e(TAG, "startVpn: ", e);
+        }
         if (intent != null) {
             // Request user permission
             startActivityForResult(intent, VPN_REQUEST_CODE);
         } else {
             // Permission already granted
-            startService(new Intent(this, SocksVpnService.class));
+            final Intent grantedIntent = new Intent(this, SocksVpnService.class);
+            try {
+                grantedIntent.putExtra("socksPort", PORT);
+            } catch (Exception e) {
+                Log.e(TAG, "startVpn: ", e);
+            }
+            startService(grantedIntent);
         }
     }
 
