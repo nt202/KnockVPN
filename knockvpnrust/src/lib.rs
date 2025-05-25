@@ -195,7 +195,9 @@ impl Session {
     }
 
     async fn close(&self) -> Result<()> {
+        info!("Before locking in close");
         let handle = self.handle.lock().await;
+        info!("After locking in close");
         handle
             .disconnect(Disconnect::ByApplication, "", "English")
             .await?;
@@ -295,7 +297,9 @@ impl Session {
         info!("Destination: {}:{}", host, port);
 
         // Open SSH channel
+        info!("Before locking in handling client");
         let handle = self.handle.lock().await;
+        info!("After locking in handling client");
         info!("Opening SSH channel to {}:{}", host, port);
         // let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
         let channel = timeout(Duration::from_secs(10), handle
