@@ -22,9 +22,8 @@ use log::{info, LevelFilter};
 use android_logger::Config;
 
 
-// Shared atomic port to track the server's bound port
-static SOCKS_SERVER_PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
-static SOCKS_SERVER_FD: AtomicI32 = AtomicI32::new(-1);
+static SOCKS_SERVER_PORT: AtomicU16 = AtomicU16::new(0);
+static SOCKS_SERVER_FD: AtomicI32 = AtomicI32::new(0);
 
 #[no_mangle]
 pub extern "C" fn Java_com_nt202_knockvpn_VpnActivity_initLogging(env: JNIEnv, _: JClass) {
@@ -138,10 +137,6 @@ pub async fn start_with_password(username: String, address: String, port: u16, p
     
     Ok(())
 }
-
-// lazy_static! {
-//     static ref CONN_LIMIT: Semaphore = Semaphore::new(50); // Max 50 concurrent connections
-// }
 
 #[derive(Clone)]
 struct Client;
