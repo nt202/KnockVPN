@@ -25,8 +25,6 @@ use android_logger::Config;
 static SOCKS_SERVER_PORT: AtomicU16 = AtomicU16::new(0); // 0 if error.
 static SOCKS_SERVER_FD: AtomicI32 = AtomicI32::new(-1);
 
-
-
 #[no_mangle]
 pub extern "C" fn Java_com_nt202_knockvpn_VpnActivity_initLogging(env: JNIEnv, _: JClass) {
     android_logger::init_once(
@@ -90,14 +88,9 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_startSocksServer(
                 let _ = start_with_password(rust_username, rust_address, rust_port, rust_password).await;
             });
         });
-
-        
-
     } else {
         return env.new_string(format!(r#"{{"error": "{}"}}"#, "0OyuTy")).unwrap().into_raw();
     }
-
-
     return env.new_string(format!(r#"{{"error": "{}"}}"#, "")).unwrap().into_raw();
 }
 
@@ -117,57 +110,7 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_getSocksFd(
     SOCKS_SERVER_FD.load(Ordering::SeqCst) as jint
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_helloFromRust(
-    env: JNIEnv,
-    _: JClass,
-) -> jstring {
-    println!("c7Qh20");
-    env.new_string("Hello from Rust!").unwrap().into_raw()
-}
-
-#[no_mangle]
-pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_sumFromRust(
-    _: JNIEnv,
-    _: JClass,
-    a: jint,
-    b: jint,
-) -> jint {
-    a + b
-}
-
-#[no_mangle]
-pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_concatenateStrings(
-    mut env: JNIEnv,
-    _: JClass,
-    str1: JString, // First Java string
-    str2: JString, // Second Java string
-) -> jstring {
-    // Convert Java strings to Rust strings
-    let rust_str1: String = env
-        .get_string(&str1)
-        .expect("Failed to get Rust string from Java")
-        .into();
-    let rust_str2: String = env
-        .get_string(&str2)
-        .expect("Failed to get Rust string from Java")
-        .into();
-
-    // Concatenate
-    let combined = format!("{}{}", rust_str1, rust_str2);
-
-    // Convert back to Java string and return as raw `jstring`
-    env.new_string(combined)
-        .expect("Couldn't create Java string!")
-        .into_raw()
-}
-
-
 pub async fn start_with_password(username: String, address: String, port: u16, password: String) -> Result<()> {
-    // env_logger::builder()
-    //     .filter_level(log::LevelFilter::Debug)
-    //     .init();
-
     let ssh = Session::connect_password(
         password,
         username,
@@ -254,54 +197,6 @@ impl Session {
         Ok(())
     }
 
-    // async fn start_socks_proxy(&self) -> Result<String> {
-    //     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    //     let bound_port = listener.local_addr()?.port();
-    //     PORT.store(bound_port, Ordering::SeqCst);
-
-    //     // Create a single SSH channel upfront
-    //     let (mut channel_read, channel_write) = {
-    //         let handle = self.handle.lock().await;
-    //         let channel = handle.channel_open_session().await?;
-    //         channel.split()
-    //     };
-
-    //     loop {
-    //         let (stream, addr) = listener.accept().await?;
-    //         info!("Accepted connection from {}", addr);
-
-    //         // Clone the existing channel halves for each new connection
-    //         let (mut client_read, mut client_write) = stream.split();
-    //         let mut channel_read = channel_read.clone();
-    //         let channel_write = channel_write.clone();
-
-    //         tokio::spawn(async move {
-    //             // Bidirectional copy between client and the single SSH channel
-    //             let client_to_channel = async {
-    //                 let mut buf = [0u8; 4096];
-    //                 loop {
-    //                     let n = client_read.read(&mut buf).await?;
-    //                     if n == 0 { break; }
-    //                     channel_write.data(&buf[..n]).await?;
-    //                 }
-    //                 Ok::<_, anyhow::Error>(())
-    //             };
-
-    //             let channel_to_client = async {
-    //                 let mut buf = [0u8; 4096];
-    //                 loop {
-    //                     let n = channel_read.read(&mut buf).await?;
-    //                     if n == 0 { break; }
-    //                     client_write.write_all(&buf[..n]).await?;
-    //                 }
-    //                 Ok::<_, anyhow::Error>(())
-    //             };
-
-    //             tokio::try_join!(client_to_channel, channel_to_client).map(|_| ())
-    //         });
-    //     }
-    // }
-
     async fn start_socks_proxy2(&self) -> Result<String> {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
 
@@ -339,13 +234,16 @@ impl Session {
         // Read methods
         let mut methods = vec![0u8; handshake[1] as usize];
         stream.read_exact(&mut methods).await?;
+        info!("Received methods: {:?}", methods);
 
         // Send no-auth response
         stream.write_all(&[0x05, 0x00]).await?;
+        info!("Sent no-auth response");
 
         // Read request
         let mut request = [0u8; 4];
         stream.read_exact(&mut request).await?;
+        info!("Received request: {:?}", request);
 
         if request[0] != 0x05 || request[1] != 0x01 {
             anyhow::bail!("Unsupported command: {:?}", request);
@@ -377,12 +275,13 @@ impl Session {
             }
             _ => anyhow::bail!("Invalid address type"),
         };
+        info!("Destination: {}:{}", host, port);
 
         // Open SSH channel
         let handle = self.handle.lock().await;
-        let channel = handle
-            .channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0)
-            .await?;
+        info!("Opening SSH channel to {}:{}", host, port);
+        let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
+        info!("SSH channel opened successfully to {}:{}", host, port);
 
         // Split channel into read/write halves
         let (mut channel_read, channel_write) = channel.split();
@@ -391,6 +290,7 @@ impl Session {
         stream
             .write_all(&[0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
             .await?;
+        info!("Sent success response");
 
         // Split TCP stream
         let (mut client_read, mut client_write) = stream.split();
@@ -401,8 +301,10 @@ impl Session {
             loop {
                 let n = client_read.read(&mut buf).await?;
                 if n == 0 {
+                    info!("Client closed connection");
                     break;
                 }
+                info!("Forwarding {} bytes from client to SSH", n);
                 channel_write.data(&buf[..n]).await?;
             }
             channel_write.eof().await?;
@@ -418,12 +320,15 @@ impl Session {
                 if n == 0 {
                     break;
                 }
+                info!("Forwarding {} bytes from SSH to client", n);
                 client_write.write_all(&buf[..n]).await?;
             }
             Ok::<_, anyhow::Error>(())
         };
 
+        info!("Starting bidirectional forwarding");
         tokio::try_join!(client_to_channel, channel_to_client)?;
+        info!("Connection closed");
         Ok(())
     }
 }
