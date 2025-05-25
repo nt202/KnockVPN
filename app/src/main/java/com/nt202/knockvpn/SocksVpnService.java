@@ -1,6 +1,9 @@
 package com.nt202.knockvpn;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.VpnService;
 import android.os.Build;
@@ -19,12 +22,30 @@ public class SocksVpnService extends VpnService {
     private ParcelFileDescriptor tunInterface;
     private TProxyService proxyService = null;
 
+    private final BroadcastReceiver stopReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            killVpn();
+            stopSelf();
+        }
+    };
+
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand: NEW VPN");
+    public void onCreate() {
+        super.onCreate();
         if (proxyService == null) {
             proxyService = new TProxyService();
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            registerReceiver(stopReceiver, new IntentFilter("STOP_VPN_ACTION"), Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(stopReceiver, new IntentFilter("STOP_VPN_ACTION"));
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "onStartCommand: NEW VPN");
         final int socksPort = intent.getIntExtra("socksPort", 0);
         final int socksFd = intent.getIntExtra("socksFd", 0);
         // Start VPN in a new thread to avoid blocking the UI
@@ -114,9 +135,7 @@ public class SocksVpnService extends VpnService {
 //         Process stats: tx_packets, tx_bytes, rx_packets, rx_bytes
     }
 
-    @Override
-    public void onDestroy() {
-        // Cleanup
+    private void killVpn() {
         if (tunInterface != null) {
             try {
                 tunInterface.close();
@@ -131,6 +150,12 @@ public class SocksVpnService extends VpnService {
                 Log.e(TAG, "Proxy close error", e);
             }
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(stopReceiver);
+        killVpn();
         super.onDestroy();
     }
 }

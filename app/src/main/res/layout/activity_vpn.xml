@@ -32,4 +32,12 @@
         android:layout_height="wrap_content"
         android:text="VPN"
         android:layout_below="@id/id_concatenated"/>
+
+    <Button
+        android:text="STOP"
+        android:id="@+id/stop_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/start_button"
+        />
 </RelativeLayout>

@@ -57,7 +57,7 @@ public class VpnActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final String errorJson = startSocksServer("testuser", "192.168.0.103", 2222, "qwerty", "");
+                final String errorJson =                                                                                                                                                       startSocksServer("testuser", "192.168.0.103", 2222, "qwerty", "");
 
                 Log.i(TAG, "errorJson: " + errorJson);
             }
@@ -85,6 +85,11 @@ public class VpnActivity extends AppCompatActivity {
 
         Button startButton = findViewById(R.id.start_button);
         startButton.setOnClickListener(v -> startVpn());
+
+        final Button stopButton = findViewById(R.id.stop_button);
+        stopButton.setOnClickListener(v -> {
+            sendBroadcast(new Intent("STOP_VPN_ACTION"));
+        });
     }
 
     private void startVpn() {
@@ -115,7 +120,14 @@ public class VpnActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
-            startService(new Intent(this, SocksVpnService.class));
+            final Intent intent = new Intent(this, SocksVpnService.class);
+            try {
+                intent.putExtra("socksPort", SOCKS_PORT);
+                intent.putExtra("socksFd", SOCKS_FD);
+            } catch (Exception e) {
+                Log.e(TAG, "startVpn: ", e);
+            }
+            startService(intent);
         }
     }
 }
