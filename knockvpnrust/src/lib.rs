@@ -171,21 +171,13 @@ pub async fn start_with_password(username: String, address: String, port: u16, p
 
     let ssh_clone = ssh.clone();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let bound_address = listener.local_addr().expect("EVN7Nq");
-
-    info!("EoYf7Y: SOCKS proxy listening on {}", bound_address);
-
     let socks_task = tokio::spawn(async move {
-        if let Err(e) = ssh_clone.start_socks_proxy(listener).await {
+        if let Err(e) = ssh_clone.start_socks_proxy().await {
             eprintln!("XBg4kq: SOCKS proxy error: {:?}", e);
         }
     });
 
     info!("{}: {}", "NXeyfq", "Started");
-
-    let bound_port = bound_address.port();
-    PORT.store(bound_port, Ordering::SeqCst);
 
     tokio::signal::ctrl_c().await.ok();
     info!("Shutting down...");
@@ -255,7 +247,13 @@ impl Session {
         Ok(())
     }
 
-    async fn start_socks_proxy(&self, listener: TcpListener) -> Result<String> {
+    async fn start_socks_proxy(&self) -> Result<String> {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let bound_address = listener.local_addr().expect("EVN7Nq");
+
+        let bound_port = bound_address.port();
+        PORT.store(bound_port, Ordering::SeqCst);
+
         loop {
             let (stream, addr) = listener.accept().await?;
             info!("8x49Qj: Accepted connection from {}", addr);
