@@ -2,6 +2,7 @@ use jni::objects::{JClass, JString};
 use jni::sys::jint;
 use jni::sys::jstring;
 use jni::JNIEnv;
+use tokio::time::timeout;
 use std::sync::atomic::{AtomicI32, AtomicU16, Ordering};
 use tokio::runtime::Runtime;
 use std::os::fd::AsRawFd;
@@ -226,6 +227,7 @@ impl Session {
         stream.read_exact(&mut handshake).await?;
 
         if handshake[0] != 0x05 {
+            stream.write_all(&[0x05, 0xff]).await?; // No acceptable methods
             anyhow::bail!("L8PRRA: Unsupported SOCKS version: {}", handshake[0]);
         } else {
             info!("fJzYmx: Supported version: {}", handshake[0]);
@@ -246,6 +248,10 @@ impl Session {
         info!("Received request: {:?}", request);
 
         if request[0] != 0x05 || request[1] != 0x01 {
+            // Send error response (e.g., command not supported)
+            stream
+                .write_all(&[0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+                .await?;
             anyhow::bail!("Unsupported command: {:?}", request);
         }
 
@@ -280,7 +286,16 @@ impl Session {
         // Open SSH channel
         let handle = self.handle.lock().await;
         info!("Opening SSH channel to {}:{}", host, port);
-        let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
+        // let channel = handle.channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0).await?;
+        let channel = timeout(Duration::from_secs(10), handle
+            .channel_open_direct_tcpip(&host, port.into(), "0.0.0.0", 0))
+            .await
+            .map_err(|_| {
+                // Send SOCKS5 error response (general failure)
+                let _ = stream
+                    .write_all(&[0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+                anyhow::anyhow!("Timeout opening SSH channel")
+            })??;
         info!("SSH channel opened successfully to {}:{}", host, port);
 
         // Split channel into read/write halves
