@@ -16,3 +16,7 @@ SSH Tunnel (via Rust, thrussh)
   ▼
 [Remote Server]
 ```
+
+```
+~/Library/Android/sdk/ndk/26.1.10909125/ndk-build
+```

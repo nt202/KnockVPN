@@ -1,22 +1,29 @@
 package com.nt202.knockvpn;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+
+import hev.htproxy.TProxyService;
 
 public class SocksVpnService extends VpnService {
     private static final String TAG = "SocksVpnService";
     private ParcelFileDescriptor tunInterface;
-    private Process tun2socksProcess;
+    private TProxyService proxyService = null;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand: NEW VPN");
+        if (proxyService == null) {
+            proxyService = new TProxyService();
+        }
         // Start VPN in a new thread to avoid blocking the UI
         new Thread(() -> {
             try {
@@ -37,7 +44,13 @@ public class SocksVpnService extends VpnService {
             builder.addAddress("10.0.0.2", 24); // Virtual IP for the device
             builder.addRoute("0.0.0.0", 0); // Route all traffic through the VPN
             builder.addDnsServer("8.8.8.8"); // Prevent DNS leaks
-
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    builder.addDisallowedApplication("com.termux");
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                Log.e("VPN", "App not found: " + e.getMessage());
+            }
             // Create the TUN interface
             tunInterface = builder.establish();
 
@@ -54,50 +67,55 @@ public class SocksVpnService extends VpnService {
     private void startTun2Socks(int tunFd) throws IOException {
 
         Log.i(TAG, "startTun2Socks: " + tunFd);
-//        // Path to the compiled tun2socks binary (placed in assets/)
-//        String binaryPath = getFilesDir() + "/tun2socks";
-//
-//        // Command to run tun2socks
-//        String[] command = {
-//                binaryPath,
-//                "--netif-ipaddr", "10.0.0.1", // Gateway IP (matches TUN subnet)
-//                "--netif-netmask", "255.255.255.0",
-//                "--socks-server-addr", "127.0.0.1:1080", // Your SOCKS proxy
-//                "--tunfd", String.valueOf(tunFd),
-//                "--tunmtu", "1500",
-//                "--loglevel", "info"
-//        };
-//
-//        // Execute the binary
-//        tun2socksProcess = new ProcessBuilder(command)
-//                .redirectErrorStream(true)
-//                .start();
-//
-//        // Log output from tun2socks (optional)
-//        new Thread(() -> {
-//            try (BufferedReader reader = new BufferedReader(
-//                    new InputStreamReader(tun2socksProcess.getInputStream()))) {
-//                String line;
-//                while ((line = reader.readLine()) != null) {
-//                    Log.d(TAG, "tun2socks: " + line);
-//                }
-//            } catch (IOException e) {
-//                Log.e(TAG, "tun2socks output error", e);
-//            }
-//        }).start();
+
+        final String content;
+        try {
+            content = RawFileReader.getRawFileAsString(this, R.raw.config);
+            // Use the content string
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+            // Handle the exception
+        }
+
+        /* TProxy */
+        File configFile = new File(getCacheDir(), "config.yaml");
+        try {
+            configFile.createNewFile();
+            FileOutputStream fos = new FileOutputStream(configFile, false);
+            fos.write(content.getBytes());
+            fos.close();
+        } catch (IOException e) {
+            return;
+        }
+
+        proxyService.TProxyStartService(configFile.getAbsolutePath(), tunFd);
+        getStats();
+    }
+
+    private void getStats() {
+        long[] stats = proxyService.TProxyGetStats();
+        for (long stat : stats) {
+            Log.i(TAG, "getStats: stats: " + stat);
+        }
+//         Process stats: tx_packets, tx_bytes, rx_packets, rx_bytes
     }
 
     @Override
     public void onDestroy() {
         // Cleanup
-        if (tun2socksProcess != null) {
-            tun2socksProcess.destroy();
-        }
         if (tunInterface != null) {
             try {
                 tunInterface.close();
             } catch (IOException e) {
                 Log.e(TAG, "TUN close error", e);
+            }
+        }
+        if (proxyService != null) {
+            try {
+                proxyService.TProxyStopService();
+            } catch (Exception e) {
+                Log.e(TAG, "Proxy close error", e);
             }
         }
         super.onDestroy();
