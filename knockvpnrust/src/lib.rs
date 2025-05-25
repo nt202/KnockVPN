@@ -101,6 +101,7 @@ pub extern "system" fn Java_com_nt202_knockvpn_VpnActivity_helloFromRust(
     env: JNIEnv,
     _: JClass,
 ) -> jstring {
+    println!("c7Qh20");
     env.new_string("Hello from Rust!").unwrap().into_raw()
 }
 
