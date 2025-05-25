@@ -38,6 +38,7 @@ public class VpnActivity extends AppCompatActivity {
 //    public native int sumFromRust(int a, int b);
     public native String helloFromRust();
     public native int getServerPort();
+    public native void initLogging();
 //    public native String concatenateStrings(String a, String b);
     public native String startSocksServer(String username, String address, int port, String password, String key);
 
@@ -49,6 +50,7 @@ public class VpnActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        initLogging();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vpn);
 
