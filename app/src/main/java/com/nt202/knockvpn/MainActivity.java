@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        if (true) {
+        if (false) {
             Intent intent = new Intent(this, VpnActivity.class);
             startActivity(intent);
             return;

@@ -26,18 +26,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <Button
-        android:id="@+id/start_button"
+    <FrameLayout
+        android:layout_below="@id/id_concatenated"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="VPN"
-        android:layout_below="@id/id_concatenated"/>
+        android:layout_height="match_parent">
 
-    <Button
-        android:text="STOP"
-        android:id="@+id/stop_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/start_button"
-        />
+        <ImageButton
+            android:id="@+id/vpn_toggle"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/vpn_button_background"
+            android:contentDescription="VPN Toggle"
+            android:scaleType="center"
+            android:src="@drawable/nothing"/> <!-- Your vector icon here -->
+
+        <TextView
+            android:id="@+id/connection_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|bottom"
+            android:layout_marginTop="140dp"
+            android:text="DISCONNECTED"
+            android:textAppearance="?android:attr/textAppearanceMedium"/>
+    </FrameLayout>
 </RelativeLayout>
