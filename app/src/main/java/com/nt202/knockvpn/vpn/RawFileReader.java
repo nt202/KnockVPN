@@ -1,4 +1,4 @@
-package com.nt202.knockvpn;
+package com.nt202.knockvpn.vpn;
 
 import android.content.Context;
 import java.io.ByteArrayOutputStream;

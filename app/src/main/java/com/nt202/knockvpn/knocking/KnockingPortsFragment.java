@@ -1,9 +1,13 @@
-package com.nt202.knockvpn;
+package com.nt202.knockvpn.knocking;
+
+import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
@@ -23,74 +27,37 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.nt202.knockvpn.R;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link KnockingPortsFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class KnockingPortsFragment extends Fragment {
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
+    private static final String PREFS_NAME = "PortKnockerPrefs";
     private SharedPreferences prefs;
 
     private ListView listView;
     private ArrayList<PortSequence> sequences = new ArrayList<>();
 
-    public KnockingPortsFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment KnockingPortsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static KnockingPortsFragment newInstance(String param1, String param2) {
-        KnockingPortsFragment fragment = new KnockingPortsFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_knocking_ports, container, false);
     }
 
-
-
-
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        prefs = this.getContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        listView = (ListView) view.findViewById(R.id.listView);
+        Button btnAdd = (Button) view.findViewById(R.id.btnAdd);
+        btnAdd.setOnClickListener(v -> showAddSequenceDialog());
+        loadSavedSequences();
+        String host = "";
+        final ArrayList<PortWithProtocol> portsWithProtocols = new ArrayList<>();
+        PortKnocker.knock(host, portsWithProtocols);
+    }
 
     private void loadSavedSequences() {
         String json = prefs.getString("sequences", "");

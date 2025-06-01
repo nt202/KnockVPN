@@ -5,7 +5,12 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".VpnFragment">
+    tools:context=".vpn.VpnFragment">
+
+    <Button
+        android:text="Change setting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
     <TextView
         android:id="@+id/id_digit"

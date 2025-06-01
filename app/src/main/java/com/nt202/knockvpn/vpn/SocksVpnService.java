@@ -1,4 +1,4 @@
-package com.nt202.knockvpn;
+package com.nt202.knockvpn.vpn;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,6 +10,9 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.system.OsConstants;
 import android.util.Log;
+
+import com.nt202.knockvpn.R;
+import com.nt202.knockvpn.vpn.RawFileReader;
 
 import java.io.File;
 import java.io.FileOutputStream;

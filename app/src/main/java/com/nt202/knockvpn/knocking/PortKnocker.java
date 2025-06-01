@@ -1,6 +1,7 @@
-package com.nt202.knockvpn;
+package com.nt202.knockvpn.knocking;
 
 import android.os.AsyncTask;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;

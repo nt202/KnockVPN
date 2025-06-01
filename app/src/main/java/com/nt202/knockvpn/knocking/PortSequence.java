@@ -1,4 +1,4 @@
-package com.nt202.knockvpn;
+package com.nt202.knockvpn.knocking;
 
 import java.io.Serializable;
 import java.util.ArrayList;
