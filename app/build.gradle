@@ -57,5 +57,6 @@ android {
 dependencies {
     implementation libs.activity
     implementation libs.appcompat
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.google.code.gson:gson:2.8.6' // todo get rid of
+    implementation libs.viewpager2
 }
