@@ -50,8 +50,8 @@ public class KnockingPortsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         prefs = this.getContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        listView = (ListView) view.findViewById(R.id.listView);
-        Button btnAdd = (Button) view.findViewById(R.id.btnAdd);
+        listView = view.findViewById(R.id.listView);
+        final Button btnAdd = view.findViewById(R.id.btnAdd);
         btnAdd.setOnClickListener(v -> showAddSequenceDialog());
         loadSavedSequences();
         String host = "";

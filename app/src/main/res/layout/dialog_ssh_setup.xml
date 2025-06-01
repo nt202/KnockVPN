@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Host -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Host"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/etHost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textUri"
+        android:singleLine="true"/>
+
+    <!-- Port -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Port"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"/>
+
+    <EditText
+        android:id="@+id/etPort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:text="22"/>
+
+    <!-- Authentication Toggle -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Authentication Method"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/authMethodGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rbPassword"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Password"/>
+
+        <RadioButton
+            android:id="@+id/rbPrivateKey"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Private Key"/>
+    </RadioGroup>
+
+    <!-- Password Section -->
+    <LinearLayout
+        android:id="@+id/passwordSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Password"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:layout_toLeftOf="@+id/btnTogglePassword"/>
+
+            <ImageButton
+                android:id="@+id/btnTogglePassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:src="@android:drawable/ic_menu_view"
+                android:background="?android:selectableItemBackground"
+                android:contentDescription="Toggle visibility"/>
+        </RelativeLayout>
+    </LinearLayout>
+
+    <!-- Private Key Section -->
+    <LinearLayout
+        android:id="@+id/privateKeySection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Private Key"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/etPrivateKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword|textMultiLine"
+                android:minLines="3"
+                android:gravity="top"
+                android:layout_toLeftOf="@+id/btnTogglePrivateKey"/>
+
+            <ImageButton
+                android:id="@+id/btnTogglePrivateKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:src="@android:drawable/ic_menu_view"
+                android:background="?android:selectableItemBackground"
+                android:contentDescription="Toggle visibility"/>
+        </RelativeLayout>
+    </LinearLayout>
+</LinearLayout>

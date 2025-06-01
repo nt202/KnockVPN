@@ -8,6 +8,7 @@
     tools:context=".vpn.VpnFragment">
 
     <Button
+        android:id="@+id/change_settings"
         android:text="Change setting"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
